@@ -43,8 +43,11 @@ steps:
   inputs:
     command: pack
     versioningScheme: byPrereleaseNumber
+    
 - task: NuGetCommand@2
-  displayName: NuGet push to artifact nuget feeds
   inputs:
-    command: push
-    feedPublish: 08823b55-6096-4b0c-89e6-70b89f793887 # using nuget feed id not name here
+    command: 'push'
+    packagesToPush: '$(Build.ArtifactStagingDirectory)/**/*.nupkg;!$(Build.ArtifactStagingDirectory)/**/*.symbols.nupkg'
+    nuGetFeedType: 'internal'
+    publishVstsFeed: '1b5aa350-91f7-4285-bd87-d5f20c9989f0/08823b55-6096-4b0c-89e6-70b89f793887'
+    allowPackageConflicts: true
