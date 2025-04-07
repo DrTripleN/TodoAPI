@@ -42,10 +42,19 @@ steps:
 
 - task: NuGetAuthenticate@1  # Authenticate with Azure Artifacts using version 1
 
-- task: NuGetCommand@2
+# Push the NuGet package using an inline PowerShell script with --skip-duplicate
+- task: PowerShell@2
+  displayName: 'Push StringLibrary'
   inputs:
-    command: 'push'
-    packagesToPush: '$(Build.ArtifactStagingDirectory)/**/*.nupkg;!$(Build.ArtifactStagingDirectory)/**/*.symbols.nupkg'
-    nuGetFeedType: 'internal'
-    publishVstsFeed: '26246e84-3395-4ddb-bfe8-91825ad1d7bb'  # Same feed ID
-    allowPackageConflicts: true
+    targetType: inline
+    script: |
+      $packagePath = Join-Path -Path "$(outputDir)" -ChildPath "StringLibrary.1.0.0.nupkg"
+      if (Test-Path $packagePath) {
+          Write-Host "Found package at: $packagePath"
+          dotnet nuget push $packagePath `
+            --source "https://pkgs.dev.azure.com/nneedha1/Lab4CD/_packaging/lab4cdfeed/nuget/v3/index.json" `
+            --api-key AzureDevOps `
+            --skip-duplicate
+      } else {
+          Write-Error "StringLibrary.1.0.0.nupkg not found!"
+      }
