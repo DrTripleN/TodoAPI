@@ -1,60 +1,56 @@
-variables:
-- name: BuildParameters.solution
-  value: '**\*.sln'
-- name: BuildParameters.ArtifactName
-  value: todoAPI2
-name: $(date:yyyyMMdd)$(rev:.r)
-resources:
-  repositories:
-  - repository: self
-    type: git
-    ref: main
-jobs:
-- job: Job_1
-  displayName: Agent job 1
-  pool:
-    vmImage: windows-latest
-  steps:
-  - checkout: self
-    clean: true
-    fetchTags: false
-  - task: NuGetToolInstaller@0
-    displayName: Use NuGet 6
-    inputs:
-      versionSpec: 6
-      checkLatest: true
-  - task: NuGetCommand@2
-    displayName: NuGet restore
-    inputs:
-      solution: $(BuildParameters.solution)
-  - task: VSBuild@1
-    displayName: Build solution
-    inputs:
-      solution: $(BuildParameters.solution)
-      msbuildArgs: /p:DeployOnBuild=true /p:WebPublishMethod=Package /p:PackageAsSingleFile=true /p:SkipInvalidConfigurations=true /p:DesktopBuildPackageLocation="$(build.artifactstagingdirectory)\WebApp.zip" /p:DeployIisAppPath="Default Web Site"
-      platform: $(BuildPlatform)
-      configuration: $(BuildConfiguration)
-  - task: VSTest@2
-    displayName: Test Assemblies
-    inputs:
-      testAssemblyVer2: >-
-        **\$(BuildConfiguration)\*test*.dll
+# ASP.NET Core (.NET Framework)
+# Build and test ASP.NET Core projects targeting the full .NET Framework.
+# Add steps that publish symbols, save build artifacts, and more:
+# https://docs.microsoft.com/azure/devops/pipelines/languages/dotnet-core
 
-        !**\obj\**
-      platform: $(BuildPlatform)
-      configuration: $(BuildConfiguration)
-  - task: PublishSymbols@2
-    displayName: Publish symbols path
-    continueOnError: True
-    inputs:
-      SearchPattern: '**\bin\**\*.pdb'
-      PublishSymbols: false
-      SymbolServerType: TeamServices
-  - task: PublishBuildArtifacts@1
-    displayName: Publish Artifact
-    condition: succeededOrFailed()
-    inputs:
-      PathtoPublish: $(build.artifactstagingdirectory)
-      ArtifactName: $(BuildParameters.ArtifactName)
-      TargetPath: '\\my\share\$(Build.DefinitionName)\$(Build.BuildNumber)'
-...
+trigger:
+- main
+
+pool:
+  name: COMP367-DevOps Agent
+
+variables:
+  solution: '**/*.sln'
+  buildPlatform: 'Any CPU'
+  buildConfiguration: 'Release'
+
+steps:
+- task: NuGetToolInstaller@1
+
+- task: NuGetCommand@2
+  inputs:
+    restoreSolution: '$(solution)'
+
+- task: VSBuild@1
+  inputs:
+    solution: '$(solution)'
+    msbuildArgs: '/p:DeployOnBuild=true /p:WebPublishMethod=Package /p:PackageAsSingleFile=true /p:SkipInvalidConfigurations=true /p:DesktopBuildPackageLocation="$(build.artifactStagingDirectory)\WebApp.zip" /p:DeployIisAppPath="Default Web Site"'
+    platform: '$(buildPlatform)'
+    configuration: '$(buildConfiguration)'
+
+- task: VSTest@2
+  inputs:
+    platform: '$(buildPlatform)'
+    configuration: '$(buildConfiguration)'
+- task: PublishBuildArtifacts@1
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+    ArtifactName: 'todoAPI3'
+    publishLocation: 'Container'
+
+- task: DotNetCoreCLI@2
+  displayName: dotnet pack
+  inputs:
+    command: pack
+    versioningScheme: byPrereleaseNumber
+    
+
+- task: NuGetAuthenticate@1
+  displayName: 'Authenticate with Azure Artifacts'
+
+- task: NuGetCommand@2
+  inputs:
+    command: 'push'
+    packagesToPush: '$(Build.ArtifactStagingDirectory)/**/*.nupkg;!$(Build.ArtifactStagingDirectory)/**/*.symbols.nupkg'
+    nuGetFeedType: 'internal'
+    publishVstsFeed: '26246e84-3395-4ddb-bfe8-91825ad1d7bb'
