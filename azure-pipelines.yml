@@ -44,7 +44,7 @@ steps:
 
 # Push the NuGet package using an inline PowerShell script with --skip-duplicate
 - task: PowerShell@2
-  displayName: 'Push StringLibrary'
+  displayName: 'Push Nuget'
   inputs:
     targetType: inline
     script: |
