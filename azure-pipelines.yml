@@ -47,4 +47,4 @@ steps:
   displayName: NuGet push to artifact nuget feeds
   inputs:
     command: push
-    feedPublish: cb6db79e-fb46-458a-b910-ef34696069de # using nuget feed id not name here
+    feedPublish: 08823b55-6096-4b0c-89e6-70b89f793887 # using nuget feed id not name here
